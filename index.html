@@ -1,62 +1,122 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>분실물 찾기 시스템</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    form { display: flex; flex-direction: column; max-width: 400px; gap: 10px; }
-    input, textarea, button { padding: 8px; font-size: 1rem; }
-    textarea { resize: vertical; height: 100px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>분실물 등록하기</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="page">
 
-  <h2>분실물 등록하기</h2>
-  
-  <form id="lostItemForm">
-    <input type="text" id="itemName" placeholder="분실물 이름 (예: 검은색 지갑)" required>
-    <textarea id="features" placeholder="상세 특징 (브랜드, 내용물 등)" required></textarea>
-    
-    <!-- 사진 업로드 인풋 -->
-    <input type="file" id="imageFile" accept="image/*" required>
-    
-    <button type="submit" id="submitBtn">등록하기</button>
-  </form>
+    <nav class="top-nav">
+      <a href="index.html" class="active">분실물 등록</a>
+      <a href="search.html">분실물 찾기</a>
+    </nav>
 
+    <header class="page-header">
+      <span class="eyebrow">LOST &amp; FOUND</span>
+      <h1>분실물 등록하기</h1>
+      <p>주운 물건의 카테고리와 특징을 입력하면<br>주인이 검색으로 쉽게 찾아갈 수 있어요.</p>
+    </header>
+
+    <div class="card">
+      <form id="lostItemForm">
+
+        <label class="field-label" for="mainCategory">대분류</label>
+        <select id="mainCategory" required>
+          <option value="" disabled selected>선택해주세요</option>
+        </select>
+
+        <label class="field-label" for="subCategory">소분류</label>
+        <select id="subCategory" required disabled>
+          <option value="" disabled selected>대분류를 먼저 선택해주세요</option>
+        </select>
+
+        <label class="field-label" for="colorSelect">색상</label>
+        <select id="colorSelect" required>
+          <option value="" disabled selected>선택해주세요</option>
+        </select>
+
+        <label class="field-label" for="itemName">분실물 이름</label>
+        <input type="text" id="itemName" placeholder="예: 검은색 지갑" required>
+
+        <label class="field-label" for="features">상세 특징</label>
+        <textarea id="features" placeholder="브랜드, 내용물, 발견 장소 등 자세히 적어주세요" required></textarea>
+
+        <label class="field-label" for="imageFile">사진</label>
+        <input type="file" id="imageFile" accept="image/*" required>
+
+        <button type="submit" id="submitBtn" class="primary">등록하기</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="categories.js"></script>
   <script>
+    // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요.
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSBKhSyjNlJNyekhKNh0vu0Q6TUpqFSuGWkwANb7RafQQ6gpWNnDSTxHExNIHiel4q/exec';
+
+    const mainSelect = document.getElementById('mainCategory');
+    const subSelect = document.getElementById('subCategory');
+    const colorSelect = document.getElementById('colorSelect');
     const form = document.getElementById('lostItemForm');
     const submitBtn = document.getElementById('submitBtn');
-    
-    // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요.
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4QIotYY2-nSAmy1VHYGg1Yv5oQ4awp3nJjRrJp4DPhbShcNSqzsuvvKLptBcikvI7/exec';
+
+    // 대분류 옵션 채우기
+    CATEGORY_TREE.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat.name;
+      opt.textContent = cat.name;
+      mainSelect.appendChild(opt);
+    });
+
+    // 색상 옵션 채우기
+    COLOR_OPTIONS.forEach(color => {
+      const opt = document.createElement('option');
+      opt.value = color;
+      opt.textContent = color;
+      colorSelect.appendChild(opt);
+    });
+
+    // 대분류 선택 시 소분류 목록 갱신
+    mainSelect.addEventListener('change', () => {
+      const selected = CATEGORY_TREE.find(c => c.name === mainSelect.value);
+      subSelect.innerHTML = '<option value="" disabled selected>선택해주세요</option>';
+      subSelect.disabled = !selected;
+      if (selected) {
+        selected.children.forEach(sub => {
+          const opt = document.createElement('option');
+          opt.value = sub;
+          opt.textContent = sub;
+          subSelect.appendChild(opt);
+        });
+      }
+    });
 
     form.addEventListener('submit', (e) => {
-      // 폼 기본 제출 동작 막기
       e.preventDefault();
-      
+
       const fileInput = document.getElementById('imageFile');
       const file = fileInput.files[0];
-      
+
       if (!file) {
         alert("사진을 선택해주세요.");
         return;
       }
 
-      // 전송 중 버튼 비활성화 (중복 클릭 방지)
       submitBtn.innerText = "업로드 중...";
       submitBtn.disabled = true;
 
-      // 1. 파일을 Base64 문자열로 읽기 위한 FileReader 객체 생성
       const reader = new FileReader();
-      
-      reader.onload = function(event) {
-        // event.target.result는 "data:image/jpeg;base64,/9j/4AAQ..." 형태입니다.
-        // Apps Script에서 처리하기 쉽게 쉼표(,) 뒷부분의 순수 Base64 데이터만 추출합니다.
+
+      reader.onload = function (event) {
         const base64Data = event.target.result.split(',')[1];
-        
-        // 2. Apps Script로 보낼 데이터(Payload) 객체 만들기
+
         const payload = {
+          mainCategory: mainSelect.value,
+          subCategory: subSelect.value,
+          color: colorSelect.value,
           itemName: document.getElementById('itemName').value,
           features: document.getElementById('features').value,
           fileName: file.name,
@@ -64,36 +124,33 @@
           imageFile: base64Data
         };
 
-        // 3. fetch API를 사용해 POST 요청 보내기
         fetch(SCRIPT_URL, {
           method: 'POST',
-          // JSON 형태로 문자열화하여 전송
           body: JSON.stringify(payload),
           headers: {
-            'Content-Type': 'text/plain;charset=utf-8' 
+            'Content-Type': 'text/plain;charset=utf-8'
             // 구글 Apps Script Web App의 CORS 정책 우회를 위해 text/plain을 자주 사용합니다.
           }
         })
-        .then(response => response.text()) // Apps Script에서 텍스트로 응답한 내용 받기
-        .then(result => {
-          alert("성공적으로 등록되었습니다!");
-          form.reset(); // 폼 초기화
-        })
-        .catch(error => {
-          console.error('업로드 실패:', error);
-          alert("오류가 발생했습니다. 다시 시도해주세요.");
-        })
-        .finally(() => {
-          // 버튼 상태 복구
-          submitBtn.innerText = "등록하기";
-          submitBtn.disabled = false;
-        });
+          .then(response => response.text())
+          .then(() => {
+            alert("성공적으로 등록되었습니다!");
+            form.reset();
+            subSelect.innerHTML = '<option value="" disabled selected>대분류를 먼저 선택해주세요</option>';
+            subSelect.disabled = true;
+          })
+          .catch(error => {
+            console.error('업로드 실패:', error);
+            alert("오류가 발생했습니다. 다시 시도해주세요.");
+          })
+          .finally(() => {
+            submitBtn.innerText = "등록하기";
+            submitBtn.disabled = false;
+          });
       };
 
-      // FileReader 실행 (이 코드가 호출되면 위쪽의 onload 함수가 결과적으로 실행됨)
       reader.readAsDataURL(file);
     });
   </script>
-
 </body>
 </html>
