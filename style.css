@@ -1,0 +1,14 @@
+body {
+  font-family: 'Malgun Gothic', sans-serif;
+  background-color: #f4f4f9;
+  display: flex;
+  justify-content: center; /* 화면 가운데 정렬 */
+  padding: 50px;
+}
+
+form {
+  background: white;
+  padding: 20px;
+  border-radius: 10px; /* 모서리 둥글게 */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* 그림자 효과 */
+}
