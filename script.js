@@ -4,7 +4,7 @@ function doPost(e) {
   
   // 1. Base64로 인코딩된 이미지를 디코딩하여 구글 드라이브에 저장
   var imageBlob = Utilities.newBlob(Utilities.base64Decode(data.imageFile), data.mimeType, data.fileName);
-  var folder = DriveApp.getFolderById("사진을_저장할_폴더_ID");
+  var folder = DriveApp.getFolderById("https://script.google.com/macros/s/AKfycby4QIotYY2-nSAmy1VHYGg1Yv5oQ4awp3nJjRrJp4DPhbShcNSqzsuvvKLptBcikvI7/exec");
   var file = folder.createFile(imageBlob);
   var fileUrl = file.getUrl();
   
