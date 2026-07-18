@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>분실물 찾기</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+
+    <nav class="top-nav">
+      <a href="index.html">분실물 등록</a>
+      <a href="search.html" class="active">분실물 찾기</a>
+    </nav>
+
+    <header class="page-header">
+      <span class="eyebrow">LOST &amp; FOUND</span>
+      <h1>내 물건 찾기</h1>
+      <p>질문에 답하면서 카테고리를 좁혀가면<br>등록된 분실물 중 일치하는 물건을 보여드려요.</p>
+    </header>
+
+    <div class="card">
+      <div class="progress-dots" id="progressDots"></div>
+      <div class="breadcrumb" id="breadcrumb">&nbsp;</div>
+      <div id="quizArea"></div>
+    </div>
+  </div>
+
+  <script src="categories.js"></script>
+  <script src="search.js"></script>
+</body>
+</html>
