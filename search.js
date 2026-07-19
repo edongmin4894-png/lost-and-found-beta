@@ -91,7 +91,7 @@ function render() {
       (choice) => { state.main = choice; render(); });
   } else if (step === 1) {
     const cat = CATEGORY_TREE.find(c => c.name === state.main);
-    renderQuestion('조금 더 구체적으로 어떤 물건인가요?',
+    renderQuestion('조금 더 구체적으로 어떤 종류인가요?',
       cat.children,
       (choice) => { state.sub = choice; render(); },
       true);
