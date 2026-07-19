@@ -307,6 +307,21 @@ button.primary:disabled {
   margin: 6px 0 0;
 }
 
+.result-hint {
+  font-size: 0.78rem;
+  color: var(--sub);
+  margin: 6px 0 0;
+}
+
+.claim-form {
+  margin-top: 8px;
+}
+
+.claim-form input {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
 .found-btn {
   margin-top: 8px;
   width: auto;

@@ -12,7 +12,7 @@
  */
 
 // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요. (index.html과 동일한 URL)
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1SUmCWB76GHC9T8t73D2Qjqk5_gGiOX9gEBhb3oIwsDjdGAqRNYx2e2wPFuY1WL_E/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8XslXkpRcuUzK9ccVrEHgUuHe8g3vyvegq-K8XlRAFxXNNxu9iqnbkf1hYFhYTB9b/exec';
 
 const MATCH_THRESHOLD = 60; // 특징 일치율 기준선 (%)
 const STATUS_FOUND = '주인 찾음'; // apps-script.js의 STATUS_FOUND와 동일한 문자열이어야 함
@@ -91,7 +91,7 @@ function render() {
       (choice) => { state.main = choice; render(); });
   } else if (step === 1) {
     const cat = CATEGORY_TREE.find(c => c.name === state.main);
-    renderQuestion('조금 더 구체적으로 어떤 종류인가요?',
+    renderQuestion('조금 더 구체적으로 어떤 물건인가요?',
       cat.children,
       (choice) => { state.sub = choice; render(); },
       true);
@@ -291,7 +291,6 @@ function renderResultList(list, note) {
         <h3>${escapeHtml(item.subCategory || '분실물')}</h3>
         <p>${escapeHtml(item.features || '')}</p>
         <span class="meta">${escapeHtml(item.color || '')}${item.matchScore != null ? ` · 일치율 ${item.matchScore}%` : ''}</span>
-        <p class="registrant">등록자: ${escapeHtml(item.registrant || '정보 없음')}</p>
         <button type="button" class="found-btn" data-item-id="${escapeHtml(item.itemId || '')}">제 물건이에요! 찾았어요</button>
       </div>
     </div>
@@ -301,6 +300,7 @@ function renderResultList(list, note) {
     <div class="result-summary">
       ${note ? `<p>${escapeHtml(note)}</p>` : ''}
       총 <b>${list.length}</b>개의 분실물을 찾았어요.
+      <p class="result-hint">등록자 정보는 분실물 보관 장소 담당 선생님께 문의하시면 확인할 수 있어요.</p>
     </div>
     <div class="result-grid">${cardsHtml}</div>
     <div class="quiz-nav" style="justify-content:center; margin-top:18px;">
@@ -312,42 +312,86 @@ function renderResultList(list, note) {
   document.getElementById('restartBtn').addEventListener('click', restart);
 
   quizArea.querySelectorAll('.found-btn').forEach(btn => {
-    btn.addEventListener('click', () => markAsFound(btn.dataset.itemId, btn));
+    btn.addEventListener('click', () => showClaimForm(btn));
   });
 }
 
 /**
- * "제 물건이에요! 찾았어요" 버튼 처리: 서버에 상태 변경을 요청하고,
- * 성공하면 해당 카드만 완료 문구로 바꿔줍니다.
+ * "제 물건이에요! 찾았어요" 버튼을 누르면 바로 신고 처리하지 않고,
+ * 본인 확인용 학번/이름을 입력하는 작은 폼을 먼저 보여줍니다.
+ * (다른 사람이 남의 분실물을 함부로 가져가는 걸 막기 위한 최소한의 장치예요)
  */
-async function markAsFound(itemId, buttonEl) {
-  if (!itemId) return;
+function showClaimForm(buttonEl) {
+  const itemId = buttonEl.dataset.itemId;
+  const wrapper = buttonEl.closest('.info');
 
-  buttonEl.disabled = true;
-  buttonEl.innerText = '처리 중...';
+  wrapper.querySelectorAll('.found-btn, .claim-form').forEach(el => el.remove());
+
+  const formEl = document.createElement('div');
+  formEl.className = 'claim-form';
+  formEl.innerHTML = `
+    <p class="quiz-subtext" style="margin:8px 0 6px; text-align:left;">본인 확인을 위해 학번과 이름을 입력해주세요. 분실물 보관 장소에서 이 정보로 확인 후 전달돼요.</p>
+    <input type="text" class="claim-student-id" inputmode="numeric" placeholder="학번 (예: 20305)">
+    <input type="text" class="claim-name" placeholder="이름" style="margin-top:8px;">
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button type="button" class="found-btn claim-submit">제출하고 찾기 신고</button>
+      <button type="button" class="text-btn claim-cancel">취소</button>
+    </div>
+  `;
+  wrapper.appendChild(formEl);
+
+  formEl.querySelector('.claim-submit').addEventListener('click', () => submitClaim(itemId, formEl));
+  formEl.querySelector('.claim-cancel').addEventListener('click', () => {
+    formEl.remove();
+    const restoredBtn = document.createElement('button');
+    restoredBtn.type = 'button';
+    restoredBtn.className = 'found-btn';
+    restoredBtn.dataset.itemId = itemId;
+    restoredBtn.innerText = '제 물건이에요! 찾았어요';
+    restoredBtn.addEventListener('click', () => showClaimForm(restoredBtn));
+    wrapper.appendChild(restoredBtn);
+  });
+}
+
+async function submitClaim(itemId, formEl) {
+  const studentId = formEl.querySelector('.claim-student-id').value.trim();
+  const name = formEl.querySelector('.claim-name').value.trim();
+
+  if (!studentId || !name) {
+    alert('학번과 이름을 모두 입력해주세요.');
+    return;
+  }
+
+  const submitBtn = formEl.querySelector('.claim-submit');
+  submitBtn.disabled = true;
+  submitBtn.innerText = '처리 중...';
 
   try {
     const res = await fetch(SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'markFound', itemId }),
+      body: JSON.stringify({
+        action: 'markFound',
+        itemId,
+        claimantStudentId: studentId,
+        claimantName: name
+      }),
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
     const result = await res.json();
 
     if (result.success) {
-      const card = buttonEl.closest('.result-card');
-      card.innerHTML = `<div class="info"><p class="found-confirm">✅ 신고 완료! 학교 분실물 보관 장소에서 등록자와 확인 후 찾아가세요.</p></div>`;
-      // 다음에 다시 검색할 때는 이 물건이 목록에서 빠지도록 캐시를 비워둠
-      allItemsCache = null;
+      const card = formEl.closest('.result-card');
+      card.innerHTML = `<div class="info"><p class="found-confirm">✅ 신고 완료! 학교 분실물 보관 장소에서 입력하신 학번·이름으로 본인 확인 후 찾아가세요.</p></div>`;
+      allItemsCache = null; // 다음 검색에서 이 물건은 목록에서 빠짐
     } else {
-      buttonEl.disabled = false;
-      buttonEl.innerText = '제 물건이에요! 찾았어요';
+      submitBtn.disabled = false;
+      submitBtn.innerText = '제출하고 찾기 신고';
       alert('처리하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
   } catch (err) {
     console.error(err);
-    buttonEl.disabled = false;
-    buttonEl.innerText = '제 물건이에요! 찾았어요';
+    submitBtn.disabled = false;
+    submitBtn.innerText = '제출하고 찾기 신고';
     alert('네트워크 오류로 처리하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 }
