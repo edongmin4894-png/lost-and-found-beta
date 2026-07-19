@@ -12,7 +12,7 @@
  */
 
 // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요. (index.html과 동일한 URL)
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz8XslXkpRcuUzK9ccVrEHgUuHe8g3vyvegq-K8XlRAFxXNNxu9iqnbkf1hYFhYTB9b/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxJKEHKTDklCDkacpSRe0yKimgdMv2F7eJEhGjz6tgFeEgcXlERYFsubWJ_FZWQ9k/exec';
 
 const MATCH_THRESHOLD = 60; // 특징 일치율 기준선 (%)
 const STATUS_FOUND = '주인 찾음'; // apps-script.js의 STATUS_FOUND와 동일한 문자열이어야 함
@@ -241,6 +241,14 @@ async function renderResults() {
     }
   } catch (err) {
     console.error(err);
+
+    if (err.message === 'unauthorized') {
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+      alert('로그인이 만료됐어요. 다시 로그인해주세요.');
+      location.reload();
+      return;
+    }
+
     quizArea.innerHTML = `
       <div class="empty-state">
         <div class="icon">⚠️</div>
@@ -371,6 +379,7 @@ async function submitClaim(itemId, formEl) {
       method: 'POST',
       body: JSON.stringify({
         action: 'markFound',
+        idToken: getIdToken(),
         itemId,
         claimantStudentId: studentId,
         claimantName: name
@@ -398,10 +407,14 @@ async function submitClaim(itemId, formEl) {
 
 async function getAllItems() {
   if (allItemsCache) return allItemsCache;
-  const res = await fetch(SCRIPT_URL);
+  const token = getIdToken();
+  const res = await fetch(`${SCRIPT_URL}?token=${encodeURIComponent(token || '')}`);
   if (!res.ok) throw new Error('네트워크 오류');
-  allItemsCache = await res.json();
+  const data = await res.json();
+  if (data && data.error) throw new Error(data.error);
+  allItemsCache = data;
   return allItemsCache;
 }
 
-render();
+// 로그인이 끝나야 퀴즈를 시작할 수 있어서, auth.js가 로그인 완료 후 이 함수를 호출해줘요.
+window.onAuthReady = render;

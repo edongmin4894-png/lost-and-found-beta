@@ -9,53 +9,70 @@
 <body>
   <div class="page">
 
-    <nav class="top-nav">
-      <a href="index.html" class="active">분실물 등록</a>
-      <a href="search.html">분실물 찾기</a>
-    </nav>
-
-    <header class="page-header">
+    <div id="authGate" class="card" style="display:none; text-align:center;">
       <span class="eyebrow">LOST &amp; FOUND</span>
-      <h1>분실물 등록하기</h1>
-      <p>주운 물건의 카테고리와 특징을 입력하면<br>주인이 검색으로 쉽게 찾아갈 수 있어요.</p>
-    </header>
+      <h1 style="margin-top:10px;">로그인이 필요해요</h1>
+      <p style="color:var(--sub); font-size:0.9rem; margin-bottom:20px;">학교 구글 계정으로 로그인하면 이용할 수 있어요.</p>
+      <div id="googleSignInBtn" style="display:flex; justify-content:center;"></div>
+      <p id="authError" style="color:#E0483E; font-size:0.82rem; margin-top:14px;"></p>
+    </div>
 
-    <div class="card">
-      <form id="lostItemForm">
+    <div id="appContent" style="display:none;">
 
-        <label class="field-label" for="mainCategory">대분류</label>
-        <select id="mainCategory" required>
-          <option value="" disabled selected>선택해주세요</option>
-        </select>
+      <nav class="top-nav">
+        <a href="index.html" class="active">분실물 등록</a>
+        <a href="search.html">분실물 찾기</a>
+      </nav>
 
-        <label class="field-label" for="subCategory">소분류</label>
-        <select id="subCategory" required disabled>
-          <option value="" disabled selected>대분류를 먼저 선택해주세요</option>
-        </select>
+      <header class="page-header">
+        <span class="eyebrow">LOST &amp; FOUND</span>
+        <h1>분실물 등록하기</h1>
+        <p>주운 물건의 카테고리와 특징을 입력하면<br>주인이 검색으로 쉽게 찾아갈 수 있어요.</p>
+        <p style="margin-top:10px;"><span id="userBadge" style="color:var(--sub); font-size:0.8rem;"></span> · <button type="button" class="text-btn" onclick="logout()" style="padding:0; font-size:0.8rem;">로그아웃</button></p>
+      </header>
 
-        <label class="field-label" for="colorSelect">색상</label>
-        <select id="colorSelect" required>
-          <option value="" disabled selected>선택해주세요</option>
-        </select>
+      <div class="card">
+        <form id="lostItemForm">
 
-        <label class="field-label" for="registrant">등록자</label>
-        <input type="text" id="registrant" placeholder="예: 2학년 3반 홍길동 (되찾아갈 때 확인용이에요)" required>
+          <label class="field-label" for="mainCategory">대분류</label>
+          <select id="mainCategory" required>
+            <option value="" disabled selected>선택해주세요</option>
+          </select>
 
-        <label class="field-label" for="features">상세 특징</label>
-        <textarea id="features" placeholder="브랜드, 무늬, 스티커, 흠집, 안에 든 물건 등 최대한 자세히 적어주세요. 나중에 찾는 사람이 적는 설명과 이 내용을 비교해서 검색 결과가 나와요." required></textarea>
+          <label class="field-label" for="subCategory">소분류</label>
+          <select id="subCategory" required disabled>
+            <option value="" disabled selected>대분류를 먼저 선택해주세요</option>
+          </select>
 
-        <label class="field-label" for="imageFile">사진</label>
-        <input type="file" id="imageFile" accept="image/*" required>
+          <label class="field-label" for="colorSelect">색상</label>
+          <select id="colorSelect" required>
+            <option value="" disabled selected>선택해주세요</option>
+          </select>
 
-        <button type="submit" id="submitBtn" class="primary">등록하기</button>
-      </form>
+          <label class="field-label" for="studentId">학번</label>
+          <input type="text" id="studentId" inputmode="numeric" placeholder="예: 20305 (학년+반+번호)" required>
+
+          <label class="field-label" for="registrantName">이름</label>
+          <input type="text" id="registrantName" placeholder="예: 홍길동" required>
+
+          <label class="field-label" for="features">상세 특징</label>
+          <textarea id="features" placeholder="브랜드, 무늬, 스티커, 흠집, 안에 든 물건 등 최대한 자세히 적어주세요. 나중에 찾는 사람이 적는 설명과 이 내용을 비교해서 검색 결과가 나와요." required></textarea>
+
+          <label class="field-label" for="imageFile">사진</label>
+          <input type="file" id="imageFile" accept="image/*" required>
+
+          <button type="submit" id="submitBtn" class="primary">등록하기</button>
+        </form>
+      </div>
     </div>
   </div>
 
   <script src="categories.js"></script>
+  <script src="https://accounts.google.com/gsi/client"></script>
+  <script src="auth.js"></script>
   <script>
     // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요.
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3xcpaJBm3QrZ_e8TKxzE5rc8DRdmdFiQNrDebTxMCilux8j-JKgWrNWTaIjBKmhsd/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxJKEHKTDklCDkacpSRe0yKimgdMv2F7eJEhGjz6tgFeEgcXlERYFsubWJ_FZWQ9k/exec';
 
     const mainSelect = document.getElementById('mainCategory');
     const subSelect = document.getElementById('subCategory');
@@ -105,6 +122,12 @@
         return;
       }
 
+      if (!getIdToken()) {
+        alert("로그인이 만료됐어요. 다시 로그인해주세요.");
+        location.reload();
+        return;
+      }
+
       submitBtn.innerText = "업로드 중...";
       submitBtn.disabled = true;
 
@@ -115,10 +138,12 @@
 
         const payload = {
           action: 'register',
+          idToken: getIdToken(),
           mainCategory: mainSelect.value,
           subCategory: subSelect.value,
           color: colorSelect.value,
-          registrant: document.getElementById('registrant').value,
+          studentId: document.getElementById('studentId').value,
+          registrantName: document.getElementById('registrantName').value,
           features: document.getElementById('features').value,
           fileName: file.name,
           mimeType: file.type,

@@ -9,25 +9,39 @@
 <body>
   <div class="page">
 
-    <nav class="top-nav">
-      <a href="index.html">분실물 등록</a>
-      <a href="search.html" class="active">분실물 찾기</a>
-    </nav>
-
-    <header class="page-header">
+    <div id="authGate" class="card" style="display:none; text-align:center;">
       <span class="eyebrow">LOST &amp; FOUND</span>
-      <h1>내 물건 찾기</h1>
-      <p>질문에 답하면서 카테고리를 좁혀가면<br>등록된 분실물 중 일치하는 물건을 보여드려요.</p>
-    </header>
+      <h1 style="margin-top:10px;">로그인이 필요해요</h1>
+      <p style="color:var(--sub); font-size:0.9rem; margin-bottom:20px;">학교 구글 계정으로 로그인하면 이용할 수 있어요.</p>
+      <div id="googleSignInBtn" style="display:flex; justify-content:center;"></div>
+      <p id="authError" style="color:#E0483E; font-size:0.82rem; margin-top:14px;"></p>
+    </div>
 
-    <div class="card">
-      <div class="progress-dots" id="progressDots"></div>
-      <div class="breadcrumb" id="breadcrumb">&nbsp;</div>
-      <div id="quizArea"></div>
+    <div id="appContent" style="display:none;">
+
+      <nav class="top-nav">
+        <a href="index.html">분실물 등록</a>
+        <a href="search.html" class="active">분실물 찾기</a>
+      </nav>
+
+      <header class="page-header">
+        <span class="eyebrow">LOST &amp; FOUND</span>
+        <h1>내 물건 찾기</h1>
+        <p>질문에 답하면서 카테고리를 좁혀가면<br>등록된 분실물 중 일치하는 물건을 보여드려요.</p>
+        <p style="margin-top:10px;"><span id="userBadge" style="color:var(--sub); font-size:0.8rem;"></span> · <button type="button" class="text-btn" onclick="logout()" style="padding:0; font-size:0.8rem;">로그아웃</button></p>
+      </header>
+
+      <div class="card">
+        <div class="progress-dots" id="progressDots"></div>
+        <div class="breadcrumb" id="breadcrumb">&nbsp;</div>
+        <div id="quizArea"></div>
+      </div>
     </div>
   </div>
 
   <script src="categories.js"></script>
+  <script src="https://accounts.google.com/gsi/client"></script>
+  <script src="auth.js"></script>
   <script src="search.js"></script>
 </body>
 </html>
