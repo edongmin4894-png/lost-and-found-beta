@@ -186,8 +186,16 @@ button.primary:disabled {
   font-size: 1.15rem;
   font-weight: 700;
   text-align: center;
-  margin: 0 0 20px;
+  margin: 0 0 8px;
   line-height: 1.4;
+}
+
+.quiz-subtext {
+  font-size: 0.82rem;
+  color: var(--sub);
+  text-align: center;
+  margin: 0 0 16px;
+  line-height: 1.5;
 }
 
 .quiz-options {
