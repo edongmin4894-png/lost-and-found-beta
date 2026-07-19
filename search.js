@@ -9,7 +9,7 @@
  */
 
 // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요. (index.html과 동일한 URL)
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8ZZ1z0OI6DYNui0eBHxzlbrxUet_-QLmZBi83G120uticmnVzInSnWFg4UNgET7TA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSBKhSyjNlJNyekhKNh0vu0Q6TUpqFSuGWkwANb7RafQQ6gpWNnDSTxHExNIHiel4q/exec';
 
 const MATCH_THRESHOLD = 60; // 특징 일치율 기준선 (%)
 
@@ -232,7 +232,7 @@ async function renderResults() {
     if (matched.length > 0) {
       renderResultList(matched, categoryNote);
     } else {
-      renderNoMatchState(scored, categoryNote);
+      renderNoMatchState();
     }
   } catch (err) {
     console.error(err);
@@ -248,22 +248,16 @@ async function renderResults() {
   }
 }
 
-function renderNoMatchState(scoredCandidates, categoryNote) {
+function renderNoMatchState() {
   quizArea.innerHTML = `
     <div class="empty-state">
       <div class="icon">🔍</div>
       <p>입력하신 특징과 ${MATCH_THRESHOLD}% 이상 일치하는 물건이 없어요.</p>
       <div class="quiz-nav" style="justify-content:center; margin-top:14px; gap:10px;">
-        <button type="button" class="text-btn" id="showAllBtn">특징 조건 없이 전체 보기</button>
-      </div>
-      <div class="quiz-nav" style="justify-content:center; margin-top:4px; gap:10px;">
         <button type="button" class="text-btn" id="backBtn">◀ 다른 특징으로 다시 적기</button>
         <button type="button" class="text-btn" id="restartBtn">처음부터 다시</button>
       </div>
     </div>`;
-  document.getElementById('showAllBtn').addEventListener('click', () => {
-    renderResultList(scoredCandidates, categoryNote);
-  });
   document.getElementById('backBtn').addEventListener('click', goBack);
   document.getElementById('restartBtn').addEventListener('click', restart);
 }
