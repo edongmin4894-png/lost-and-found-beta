@@ -9,7 +9,7 @@
  */
 
 // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요. (index.html과 동일한 URL)
-const SCRIPT_URL = 'https://script.google.com/macros/s/여기에_배포된_웹앱_ID를_입력하세요/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8ZZ1z0OI6DYNui0eBHxzlbrxUet_-QLmZBi83G120uticmnVzInSnWFg4UNgET7TA/exec';
 
 const MATCH_THRESHOLD = 60; // 특징 일치율 기준선 (%)
 
