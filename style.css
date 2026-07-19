@@ -301,6 +301,37 @@ button.primary:disabled {
   font-weight: 700;
 }
 
+.result-card .info .registrant {
+  font-size: 0.78rem;
+  color: var(--sub);
+  margin: 6px 0 0;
+}
+
+.found-btn {
+  margin-top: 8px;
+  width: auto;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.found-btn:hover { background: #D8DFFA; }
+.found-btn:disabled { color: var(--sub); background: #F0F0F4; cursor: default; }
+
+.found-confirm {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent-dark);
+  text-align: center;
+  margin: 0;
+  padding: 8px 0;
+}
+
 .empty-state {
   text-align: center;
   padding: 30px 10px;

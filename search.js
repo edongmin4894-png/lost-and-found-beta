@@ -6,12 +6,16 @@
  * 4단계에서 입력한 문장은, 앞선 조건(대분류/소분류/색상)을 만족한 물건들의
  * 등록 시 '상세 특징' 텍스트와 비교해서 일치율(%)을 계산하고, 60% 이상인
  * 물건만 우선적으로 보여줍니다. (calcMatchScore 참고)
+ *
+ * 이미 주인을 찾은 물건(status === '주인 찾음')은 검색 후보에서 자동으로 제외되고,
+ * 결과 카드의 "제 물건이에요! 찾았어요" 버튼을 누르면 서버에 상태 변경을 요청합니다.
  */
 
 // Apps Script 배포 후 얻은 웹앱 URL을 여기에 붙여넣으세요. (index.html과 동일한 URL)
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSBKhSyjNlJNyekhKNh0vu0Q6TUpqFSuGWkwANb7RafQQ6gpWNnDSTxHExNIHiel4q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1SUmCWB76GHC9T8t73D2Qjqk5_gGiOX9gEBhb3oIwsDjdGAqRNYx2e2wPFuY1WL_E/exec';
 
 const MATCH_THRESHOLD = 60; // 특징 일치율 기준선 (%)
+const STATUS_FOUND = '주인 찾음'; // apps-script.js의 STATUS_FOUND와 동일한 문자열이어야 함
 
 const quizArea = document.getElementById('quizArea');
 const progressDots = document.getElementById('progressDots');
@@ -82,7 +86,7 @@ function render() {
   const step = currentStepIndex();
 
   if (step === 0) {
-    renderQuestion('잃어버리신 물건의 전체적인 카테고리는 무엇인가요?',
+    renderQuestion('잃어버리신 물건의 종류는 무엇인가요?',
       CATEGORY_TREE.map(c => c.name),
       (choice) => { state.main = choice; render(); });
   } else if (step === 1) {
@@ -191,8 +195,9 @@ async function renderResults() {
 
   try {
     const items = await getAllItems();
+    const available = items.filter(i => i.status !== STATUS_FOUND);
 
-    const exact = items.filter(i =>
+    const exact = available.filter(i =>
       i.mainCategory === state.main && i.subCategory === state.sub && i.color === state.color
     );
 
@@ -200,7 +205,7 @@ async function renderResults() {
     let categoryNote = '';
 
     if (candidates.length === 0) {
-      const relaxed = items.filter(i =>
+      const relaxed = available.filter(i =>
         i.mainCategory === state.main && i.subCategory === state.sub
       );
       if (relaxed.length > 0) {
@@ -223,7 +228,7 @@ async function renderResults() {
     const scored = candidates
       .map(item => ({
         ...item,
-        matchScore: calcMatchScore(state.featureText, `${item.itemName} ${item.features}`)
+        matchScore: calcMatchScore(state.featureText, item.features)
       }))
       .sort((a, b) => b.matchScore - a.matchScore);
 
@@ -279,13 +284,15 @@ function renderResultList(list, note) {
   }
 
   const cardsHtml = list.map(item => `
-    <div class="result-card">
-      <img src="${item.imageUrl || ''}" alt="${escapeHtml(item.itemName || '')}" loading="lazy"
+    <div class="result-card" data-item-id="${escapeHtml(item.itemId || '')}">
+      <img src="${item.imageUrl || ''}" alt="${escapeHtml(item.subCategory || '')}" loading="lazy"
            onerror="this.style.visibility='hidden'">
       <div class="info">
-        <h3>${escapeHtml(item.itemName || '이름 없음')}</h3>
+        <h3>${escapeHtml(item.subCategory || '분실물')}</h3>
         <p>${escapeHtml(item.features || '')}</p>
-        <span class="meta">${escapeHtml(item.subCategory || '')} · ${escapeHtml(item.color || '')}${item.matchScore != null ? ` · 일치율 ${item.matchScore}%` : ''}</span>
+        <span class="meta">${escapeHtml(item.color || '')}${item.matchScore != null ? ` · 일치율 ${item.matchScore}%` : ''}</span>
+        <p class="registrant">등록자: ${escapeHtml(item.registrant || '정보 없음')}</p>
+        <button type="button" class="found-btn" data-item-id="${escapeHtml(item.itemId || '')}">제 물건이에요! 찾았어요</button>
       </div>
     </div>
   `).join('');
@@ -303,6 +310,46 @@ function renderResultList(list, note) {
   `;
   document.getElementById('backBtn').addEventListener('click', goBack);
   document.getElementById('restartBtn').addEventListener('click', restart);
+
+  quizArea.querySelectorAll('.found-btn').forEach(btn => {
+    btn.addEventListener('click', () => markAsFound(btn.dataset.itemId, btn));
+  });
+}
+
+/**
+ * "제 물건이에요! 찾았어요" 버튼 처리: 서버에 상태 변경을 요청하고,
+ * 성공하면 해당 카드만 완료 문구로 바꿔줍니다.
+ */
+async function markAsFound(itemId, buttonEl) {
+  if (!itemId) return;
+
+  buttonEl.disabled = true;
+  buttonEl.innerText = '처리 중...';
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'markFound', itemId }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const card = buttonEl.closest('.result-card');
+      card.innerHTML = `<div class="info"><p class="found-confirm">✅ 신고 완료! 학교 분실물 보관 장소에서 등록자와 확인 후 찾아가세요.</p></div>`;
+      // 다음에 다시 검색할 때는 이 물건이 목록에서 빠지도록 캐시를 비워둠
+      allItemsCache = null;
+    } else {
+      buttonEl.disabled = false;
+      buttonEl.innerText = '제 물건이에요! 찾았어요';
+      alert('처리하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  } catch (err) {
+    console.error(err);
+    buttonEl.disabled = false;
+    buttonEl.innerText = '제 물건이에요! 찾았어요';
+    alert('네트워크 오류로 처리하지 못했어요. 잠시 후 다시 시도해주세요.');
+  }
 }
 
 async function getAllItems() {
